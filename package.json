@@ -46,44 +46,39 @@
                                 "properties": {
                                     "id": {
                                         "type": "string",
-                                        "description": "A unique ID for the rule"
+                                        "description": "A unique ID for the rule."
                                     },
                                     "regex": {
                                         "type": "string",
-                                        "description": "A regular expression to match rule violations"
+                                        "description": "A regular expression to match rule violations."
                                     },
                                     "flags": {
-                                        "type": [
-                                            "d",
-                                            "g",
-                                            "i",
-                                            "m",
-                                            "s",
-                                            "u",
-                                            "y"
-                                        ],
-                                        "description": "Regular expression flags"
+                                        "type": "string",
+                                        "pattern": "^(?:([dgimsuy])(?!.*\\1))+$",
+                                        "patternErrorMessage": "Regex flags must be a combination of the characters 'd', 'g', 'i', 'm', 's', 'u', 'y'.",
+                                        "description": "Regular expression flags used by the matcher."
                                     },
                                     "language": {
                                         "type": "string",
-                                        "description": "The programming language the rule applies to"
+                                        "description": "The programming language the rule applies to."
                                     },
                                     "message": {
                                         "type": "string",
-                                        "description": "Message to print when a rule violation is found"
+                                        "description": "The message to print when a rule violation is found."
                                     },
                                     "severity": {
-                                        "type": [
+                                        "type": "string",
+                                        "enum": [
                                             "Error",
                                             "Warning",
                                             "Information",
                                             "Hint"
                                         ],
-                                        "description": "Severity of the rule violation"
+                                        "description": "Severity of the diagnostic to show for the rule violation."
                                     },
                                     "quickFix": {
                                         "type": "string",
-                                        "description": "The fix to apply via the quick fix menu"
+                                        "description": "The fix to apply via the context menus."
                                     }
                                 }
                             }
