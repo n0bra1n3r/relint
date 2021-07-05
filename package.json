@@ -1,0 +1,112 @@
+{
+    "name": "relint",
+    "displayName": "relint",
+    "publisher": "n0brain3r",
+    "description": "Regex-based linting for any language",
+    "version": "0.0.1",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/n0bra1n3r/relint.git"
+    },
+    "license": "MIT",
+    "keywords": [
+        "productivity",
+        "visual studio code",
+        "rules",
+        "notes",
+        "linter",
+        "regex"
+    ],
+    "categories": [
+        "Linters",
+        "Other",
+        "Programming Languages",
+        "Debuggers"
+    ],
+    "engines": {
+        "vscode": "^1.50.0"
+    },
+    "activationEvents": [
+        "*"
+    ],
+    "contributes": {
+        "configuration": {
+            "properties": {
+                "relint": {
+                    "type": "object",
+                    "properties": {
+                        "flags": {
+                            "type": "string",
+                            "default": "g"
+                        },
+                        "rules": {
+                            "type": "array",
+                            "default": [],
+                            "items": {
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "A unique ID for the rule"
+                                    },
+                                    "regex": {
+                                        "type": "string",
+                                        "description": "A regular expression to match rule violations"
+                                    },
+                                    "flags": {
+                                        "type": [
+                                            "d",
+                                            "g",
+                                            "i",
+                                            "m",
+                                            "s",
+                                            "u",
+                                            "y"
+                                        ],
+                                        "description": "Regular expression flags"
+                                    },
+                                    "language": {
+                                        "type": "string",
+                                        "description": "The programming language the rule applies to"
+                                    },
+                                    "message": {
+                                        "type": "string",
+                                        "description": "Message to print when a rule violation is found"
+                                    },
+                                    "severity": {
+                                        "type": [
+                                            "Error",
+                                            "Warning",
+                                            "Information",
+                                            "Hint"
+                                        ],
+                                        "description": "Severity of the rule violation"
+                                    },
+                                    "quickFix": {
+                                        "type": "string",
+                                        "description": "The fix to apply via the quick fix menu"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "main": "./out/extension",
+    "scripts": {
+        "publish": "vsce package && vsce publish minor",
+        "build": "vsce package",
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "lint": "tslint -p ./",
+        "watch": "tsc -watch -p ./"
+    },
+    "devDependencies": {
+        "@types/node": "^12.20.15",
+        "@types/vscode": "^1.50.0",
+        "eslint": "^7.30.0",
+        "typescript": "^4.3.5",
+        "vsce": "^1.95.0"
+    }
+}
