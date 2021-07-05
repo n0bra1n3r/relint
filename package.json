@@ -90,7 +90,7 @@
     },
     "main": "./out/extension",
     "scripts": {
-        "publish": "vsce package && vsce publish minor",
+        "publish": "vsce package && vsce publish",
         "build": "vsce package",
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
