@@ -45,7 +45,6 @@ function refreshDiagnostics(
             const textLine = document.lineAt(lineIndex);
             for (const rule of rules) {
                 const lineMatch = rule.regex.exec(textLine.text);
-                rule.regex.lastIndex = 0;
                 if (lineMatch) {
                     const diagnostic = createDiagnostic(
                         diagnostics.name,

@@ -47,17 +47,15 @@ export default class Rule
         const vsconfig = vscode.workspace.getConfiguration(ConfigSection.Name);
 
         const rules = vsconfig.get<Config[]>(ConfigSection.Rules) ?? [];
-        // https://stackoverflow.com/a/31970023/38940
-        // The index at which to start the next match. When "g" is absent, this will remain as 0.
-        // Adding g to prevent infinite loop
-        const globalFlags = vsconfig.get<string>(ConfigSection.Flags) || 'g';
+
+        const globalFlags = vsconfig.get<string>(ConfigSection.Flags);
         const globalLanguage = vsconfig.get<string>(ConfigSection.Language) || 'plaintext';
 
         for (const { flags, language, regex, severity, ...info } of rules) {
             Rule.rules.push({
                 ...info,
                 language: language || globalLanguage,
-                regex: new RegExp(regex, flags || globalFlags),
+                regex: new RegExp(regex, (flags || globalFlags)?.replace("g", "")),
                 severity: SeverityMap[severity ?? "Warning"] ??
                             vscode.DiagnosticSeverity.Warning
             });
