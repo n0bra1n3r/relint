@@ -1,31 +1,35 @@
 import * as vscode from 'vscode';
-import Rule from './rule';
+import Rule, { ConfigSection } from './rule';
 
 export default function activateDiagnostics(
         context: vscode.ExtensionContext,
-        diagnostics: vscode.DiagnosticCollection,
-        checkRules: Rule[]): void {
+        diagnostics: vscode.DiagnosticCollection): void {
     if (vscode.window.activeTextEditor) {
-        refreshDiagnostics(vscode.window.activeTextEditor.document, diagnostics, checkRules);
+        refreshDiagnostics(vscode.window.activeTextEditor.document, diagnostics, Rule.all);
     }
+
+    vscode.workspace.onDidChangeConfiguration(event => {
+        if (event.affectsConfiguration(ConfigSection.Name) && vscode.window.activeTextEditor) {
+            refreshDiagnostics(vscode.window.activeTextEditor.document, diagnostics, Rule.all);
+        }
+    });
 
     context.subscriptions.push(
         vscode.window.onDidChangeActiveTextEditor(editor => {
             if (editor) {
-                refreshDiagnostics(editor.document, diagnostics, checkRules);
+                refreshDiagnostics(editor.document, diagnostics, Rule.all);
             }
         })
     );
 
     context.subscriptions.push(
         vscode.workspace.onDidChangeTextDocument(event =>
-            refreshDiagnostics(event.document, diagnostics, checkRules))
+            refreshDiagnostics(event.document, diagnostics, Rule.all))
     );
 
     context.subscriptions.push(
         vscode.workspace.onDidCloseTextDocument(doc => diagnostics.delete(doc.uri))
     );
-
 }
 
 function refreshDiagnostics(

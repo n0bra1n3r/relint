@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-const enum ConfigSection
+export const enum ConfigSection
 {
     Name = 'relint',
     Rules = 'rules',

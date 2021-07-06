@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import Rule from './rule';
+import Rule, { ConfigSection } from './rule';
 import activateDiagnostics from './diagnostics';
 
 const DiagnosticCollectionName = "relint";
@@ -9,10 +9,17 @@ type QuickFix = { regex: RegExp, quickFix: string };
 export function activate(context: vscode.ExtensionContext) {
     Rule.loadAll();
 
+    vscode.workspace.onDidChangeConfiguration(event => {
+        if (event.affectsConfiguration(ConfigSection.Name)) {
+            Rule.loadAll();
+        }
+    });
+
+
     const diagnostics = vscode.languages.createDiagnosticCollection(DiagnosticCollectionName);
     context.subscriptions.push(diagnostics);
 
-    activateDiagnostics(context, diagnostics, Rule.all);
+    activateDiagnostics(context, diagnostics);
 
     const languageMap = Rule.all
         .filter(rule => rule.quickFix !== undefined)
