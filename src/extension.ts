@@ -4,29 +4,46 @@ import activateDiagnostics from './diagnostics';
 
 const DiagnosticCollectionName = "relint";
 
-type QuickFix = { regex: RegExp, quickFix: string };
+type QuickFix = { ruleId: string, regex: RegExp, quickFix: string };
 
 export function activate(context: vscode.ExtensionContext) {
     Rule.loadAll();
 
+    const quickFixes = loadQuickFixes(context);
+
     vscode.workspace.onDidChangeConfiguration(event => {
         if (event.affectsConfiguration(ConfigSection.Name)) {
             Rule.loadAll();
+
+            for (const rule of Rule.all) {
+                const array = quickFixes[rule.language];
+                const index = array.findIndex(quickFix => quickFix.ruleId === rule.id);
+                if (index === -1) { continue; }
+
+                if (rule.quickFix === undefined) {
+                    array.splice(index, 1);
+                } else {
+                    const quickFix = array[index];
+                    quickFix.regex = rule.regex;
+                    quickFix.quickFix = rule.quickFix;
+                }
+            }
         }
     });
 
-
     const diagnostics = vscode.languages.createDiagnosticCollection(DiagnosticCollectionName);
     context.subscriptions.push(diagnostics);
-
     activateDiagnostics(context, diagnostics);
+}
 
+function loadQuickFixes(context: vscode.ExtensionContext): { [language: string]: QuickFix[] } {
     const languageMap = Rule.all
         .filter(rule => rule.quickFix !== undefined)
         .reduce((accumulator, rule) => ({
             ...accumulator, [rule.language]: [
                 ...(accumulator[rule.language] ?? []),
                 {
+                    ruleId: rule.id,
                     regex: rule.regex,
                     quickFix: rule.quickFix!
                 }
@@ -48,6 +65,8 @@ export function activate(context: vscode.ExtensionContext) {
             })
         );
     }
+
+    return languageMap;
 }
 
 export class QuickFixProvider implements vscode.CodeActionProvider {
