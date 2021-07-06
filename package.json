@@ -31,41 +31,54 @@
     ],
     "contributes": {
         "configuration": {
+            "title": "relint",
             "properties": {
                 "relint": {
                     "type": "object",
+                    "required": ["rules"],
                     "properties": {
                         "flags": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "The default regular expression flags used by the rule voilation matchers."
                         },
                         "language": {
-                            "type": "string"
+                            "type": "string",
+                            "default": "plaintext",
+                            "minLength": 1,
+                            "description": "The default programming language the rules apply to."
                         },
                         "rules": {
                             "type": "array",
+                            "minItems": 1,
                             "default": [],
                             "items": {
+                                "required": ["id", "regex", "message"],
                                 "properties": {
                                     "id": {
                                         "type": "string",
-                                        "description": "A unique ID for the rule."
+                                        "minLength": 1,
+                                        "description": "A descriptive and unique ID for the rule."
                                     },
                                     "regex": {
                                         "type": "string",
-                                        "description": "A regular expression to match rule violations."
+                                        "minLength": 1,
+                                        "description": "A regular expression to match a rule violation."
                                     },
                                     "flags": {
                                         "type": "string",
                                         "pattern": "^(?:([dimsuy])(?!.*\\1))+$",
                                         "patternErrorMessage": "Regex flags must be a combination of the characters 'd', 'i', 'm', 's', 'u', 'y'.",
-                                        "description": "Regular expression flags used by the matcher."
+                                        "description": "Regular expression flags used by the rule violation matcher."
                                     },
                                     "language": {
                                         "type": "string",
+                                        "default": "plaintext",
+                                        "minLength": 1,
                                         "description": "The programming language the rule applies to."
                                     },
                                     "message": {
                                         "type": "string",
+                                        "minLength": 1,
                                         "description": "The message to print when a rule violation is found."
                                     },
                                     "severity": {
@@ -76,11 +89,12 @@
                                             "Information",
                                             "Hint"
                                         ],
-                                        "description": "Severity of the diagnostic to show for the rule violation."
+                                        "default": "Warning",
+                                        "description": "Severity of the diagnostic to display for the rule violation."
                                     },
                                     "quickFix": {
                                         "type": "string",
-                                        "description": "The fix to apply via the context menus."
+                                        "description": "The fix to apply to rule violations. Substitution tokens starting with `$` can be used."
                                     }
                                 }
                             }
