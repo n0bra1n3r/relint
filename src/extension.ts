@@ -77,13 +77,18 @@ export class QuickFixProvider implements vscode.CodeActionProvider {
             document: vscode.TextDocument,
             range: vscode.Range,
             context: vscode.CodeActionContext): vscode.CodeAction[] {
-        const text = document.getText(range);
-        const fix = this.fixes.find(fix => fix.regex.test(text));
-        if (!fix) { return []; }
+        let text = document.getText(range);
+        let edit = this.fixes.find(fix => fix.regex.test(text));
+        if (!edit) { return []; }
 
-        const action = new vscode.CodeAction(`Quick fix to '${fix.quickFix}'`, vscode.CodeActionKind.QuickFix);
+        while (edit) {
+            text = text.replace(edit.regex, edit.quickFix);
+            edit = this.fixes.find(fix => fix.regex.test(text));
+        }
+
+        const action = new vscode.CodeAction(`Quick fix to '${text}'`, vscode.CodeActionKind.QuickFix);
         action.edit = new vscode.WorkspaceEdit();
-        action.edit.replace(document.uri, range, text.replace(fix.regex, fix.quickFix));
+        action.edit.replace(document.uri, range, text);
         action.isPreferred = true;
         return [action];
     }
@@ -109,11 +114,15 @@ export class QuickFixAllProvider implements vscode.CodeActionProvider {
             .filter(diagnostic => diagnostic.source === DiagnosticCollectionName);
 
         for (const { range } of diagnostics) {
-            const text = document.getText(range);
-            const fix = this.fixes.find(fix => fix.regex.test(text));
-            if (!fix) { continue; }
+            let text = document.getText(range);
+            let edit = this.fixes.find(fix => fix.regex.test(text));
+            if (!edit) { continue; }
 
-            edits.push(new vscode.TextEdit(range, text.replace(fix.regex, fix.quickFix)));
+            while (edit) {
+                text = text.replace(edit.regex, edit.quickFix);
+                edit = this.fixes.find(fix => fix.regex.test(text));
+            }
+            edits.push(new vscode.TextEdit(range, text));
         }
 
         if (edits.length === 0) { return []; }
