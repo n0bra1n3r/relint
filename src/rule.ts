@@ -56,7 +56,7 @@ export default class Rule
                 ...info,
                 language: language || globalLanguage,
                 regex: new RegExp(regex, (flags || globalFlags)?.replace("g", "")),
-                severity: SeverityMap[severity ?? "Warning"] ??
+                severity: SeverityMap[severity || "Warning"] ??
                             vscode.DiagnosticSeverity.Warning
             });
         }
