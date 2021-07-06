@@ -16,3 +16,6 @@ All notable changes to the "relint" extension will be documented in this file.
 
 ## 0.1.4
 - Apply fixes recursively
+
+## 0.1.5
+- Polish and fixes
