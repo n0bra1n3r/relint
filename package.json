@@ -39,6 +39,9 @@
                             "type": "string",
                             "default": "g"
                         },
+                        "language": {
+                            "type": "string"
+                        },
                         "rules": {
                             "type": "array",
                             "default": [],

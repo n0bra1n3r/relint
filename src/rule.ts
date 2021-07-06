@@ -3,16 +3,17 @@ import * as vscode from 'vscode';
 export const enum ConfigSection
 {
     Name = 'relint',
+    Flags = 'flags',
+    Language = 'language',
     Rules = 'rules',
-    Flags = 'flags'
 }
 
 type Config = {
     id: string,
-    flags: string,
-    regex: string,
-    language: string,
+    flags?: string,
+    language?: string,
     message: string,
+    regex: string,
     severity?: vscode.DiagnosticSeverity,
     quickFix?: string
 };
@@ -30,9 +31,9 @@ export default class Rule
 
     private constructor(
             readonly id: string,
-            readonly regex: RegExp,
             readonly language: string,
             readonly message: string,
+            readonly regex: RegExp,
             readonly severity: vscode.DiagnosticSeverity,
             readonly quickFix?: string) { }
 
@@ -50,10 +51,12 @@ export default class Rule
         // The index at which to start the next match. When "g" is absent, this will remain as 0.
         // Adding g to prevent infinite loop
         const globalFlags = vsconfig.get<string>(ConfigSection.Flags) || 'g';
+        const globalLanguage = vsconfig.get<string>(ConfigSection.Language) || 'plaintext';
 
-        for (const { flags, regex, severity, ...info } of rules) {
+        for (const { flags, language, regex, severity, ...info } of rules) {
             Rule.rules.push({
                 ...info,
+                language: language || globalLanguage,
                 regex: new RegExp(regex, flags || globalFlags),
                 severity: SeverityMap[severity ?? "Warning"] ??
                             vscode.DiagnosticSeverity.Warning
