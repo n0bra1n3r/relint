@@ -7,3 +7,6 @@ All notable changes to the "relint" extension will be documented in this file.
 
 ## 0.1.1
 - Fix contribution points
+
+## 0.1.2
+- Reload diagnostics when config changes
