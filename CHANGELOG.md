@@ -13,3 +13,6 @@ All notable changes to the "relint" extension will be documented in this file.
 
 ## 0.1.3
 - Reload code actions when config changes
+
+## 0.1.4
+- Apply fixes recursively
