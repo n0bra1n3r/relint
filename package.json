@@ -41,6 +41,8 @@
                     "properties": {
                         "flags": {
                             "type": "string",
+                            "pattern": "^(?:([dimsuy])(?!.*\\1))+$",
+                            "patternErrorMessage": "Regex flags must be a combination of the characters 'd', 'i', 'm', 's', 'u', 'y'.",
                             "description": "The default regular expression flags used by the rule voilation matchers."
                         },
                         "language": {
