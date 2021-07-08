@@ -19,3 +19,6 @@ All notable changes to the "relint" extension will be documented in this file.
 
 ## 0.1.5
 - Polish and fixes
+
+## 0.2.0
+- Add reodering support
