@@ -8,22 +8,27 @@ export const enum ConfigSection
     Rules = 'rules',
 }
 
+export type FixType = 'reorder_asc' | 'reorder_desc' | 'replace';
+
+export type Severity = keyof typeof vscode.DiagnosticSeverity;
+
 type Config = {
     id: string,
+    fixType?: FixType,
     flags?: string,
     language?: string,
     message: string,
     regex: string,
-    severity?: vscode.DiagnosticSeverity,
+    severity?: Severity,
     quickFix?: string
 };
 
-const SeverityMap: { [Key in keyof typeof vscode.DiagnosticSeverity]: vscode.DiagnosticSeverity } = {
-    Error: vscode.DiagnosticSeverity.Error,
-    Warning: vscode.DiagnosticSeverity.Warning,
-    Information: vscode.DiagnosticSeverity.Information,
-    Hint: vscode.DiagnosticSeverity.Hint
-};
+class Default
+{
+    static Language = 'plaintext';
+    static FixType: FixType = 'replace';
+    static Severity: Severity = 'Warning';
+}
 
 export default class Rule
 {
@@ -31,6 +36,7 @@ export default class Rule
 
     private constructor(
             readonly id: string,
+            readonly fixType: FixType,
             readonly language: string,
             readonly message: string,
             readonly regex: RegExp,
@@ -48,17 +54,23 @@ export default class Rule
 
         const rules = vsconfig.get<Config[]>(ConfigSection.Rules) ?? [];
 
-        const globalFlags = vsconfig.get<string>(ConfigSection.Flags);
-        const globalLanguage = vsconfig.get<string>(ConfigSection.Language) || 'plaintext';
+        const globalFlags = vsconfig.get<string>(ConfigSection.Flags) || '';
+        const globalLanguage = vsconfig.get<string>(ConfigSection.Language) || Default.Language;
 
-        for (const { flags, language, regex, severity, ...info } of rules) {
-            Rule.rules.push({
-                ...info,
+        for (const { fixType, flags, language, quickFix, regex, severity, ...info } of rules) {
+            const rule = {
+                ...info, quickFix,
+                fixType: fixType || Default.FixType,
                 language: language || globalLanguage,
-                regex: new RegExp(regex, (flags || globalFlags)?.replace("g", "")),
-                severity: SeverityMap[severity || "Warning"] ??
-                            vscode.DiagnosticSeverity.Warning
-            });
+                regex: new RegExp(regex, (flags || globalFlags).replace(/[^dimsuy]/g, '') + 'g'),
+                severity: vscode.DiagnosticSeverity[severity!] ??
+                          vscode.DiagnosticSeverity[Default.Severity]
+            };
+            if (rule.fixType === 'reorder_asc' ||
+                rule.fixType === 'reorder_desc') {
+                rule.quickFix = rule.quickFix || '$&';
+            }
+            Rule.rules.push(rule);
         }
     }
 }

@@ -98,11 +98,21 @@
                                             "Hint"
                                         ],
                                         "default": "Warning",
-                                        "description": "Severity of the diagnostic to display for the rule violation."
+                                        "description": "Severity of the diagnostic to display."
                                     },
                                     "quickFix": {
                                         "type": "string",
-                                        "description": "The fix to apply to rule violations. Substitution tokens starting with `$` can be used."
+                                        "description": "The fix to apply. Substitution tokens starting with `$` can be used."
+                                    },
+                                    "fixType": {
+                                        "type": "string",
+                                        "enum": [
+                                            "reorder_asc",
+                                            "reorder_desc",
+                                            "replace"
+                                        ],
+                                        "default": "replace",
+                                        "description": "The type of fix to apply. `reorder_*` fixes can be controlled using substitution tokens in `quicFix`."
                                     }
                                 }
                             }
