@@ -5,28 +5,37 @@ export const enum ConfigSection
     Name = 'relint',
     Flags = 'flags',
     Language = 'language',
-    Rules = 'rules',
+    Rules = 'rules'
 }
 
-export type FixType = 'reorder_asc' | 'reorder_desc' | 'replace';
+enum FixTypes
+{
+    reorder_asc,
+    reorder_desc,
+    replace
+}
+
+export type FixType = keyof typeof FixTypes;
 
 export type Severity = keyof typeof vscode.DiagnosticSeverity;
 
 type Config = {
-    id: string,
+    fix?: string,
     fixType?: FixType,
     flags?: string,
     language?: string,
     message: string,
-    regex: string,
-    severity?: Severity,
-    quickFix?: string
+    name: string,
+    pattern: string,
+    severity?: Severity
 };
 
 class Default
 {
-    static Language = 'plaintext';
+    static Fix = '$&';
     static FixType: FixType = 'replace';
+    static Flags = '';
+    static Language = 'plaintext';
     static Severity: Severity = 'Warning';
 }
 
@@ -35,42 +44,78 @@ export default class Rule
     private static rules: Rule[] = [];
 
     private constructor(
-            readonly id: string,
             readonly fixType: FixType,
             readonly language: string,
             readonly message: string,
+            readonly name: string,
             readonly regex: RegExp,
-            readonly severity: vscode.DiagnosticSeverity,
-            readonly quickFix?: string) { }
+            readonly severityCode: vscode.DiagnosticSeverity,
+            readonly fix?: string) { }
 
-    public static get all() : Rule[] {
+    public get id(): string {
+        return `/${this.regex.source}/${this.regex.flags}`;
+    }
+
+    public static get all(): Rule[] {
         return this.rules;
     }
 
     public static loadAll() {
-        Rule.rules = [];
+        this.rules = this.getRules();
+        this.monitorRules();
+    }
 
-        const vsconfig = vscode.workspace.getConfiguration(ConfigSection.Name);
-
-        const rules = vsconfig.get<Config[]>(ConfigSection.Rules) ?? [];
-
-        const globalFlags = vsconfig.get<string>(ConfigSection.Flags) || '';
-        const globalLanguage = vsconfig.get<string>(ConfigSection.Language) || Default.Language;
-
-        for (const { fixType, flags, language, quickFix, regex, severity, ...info } of rules) {
-            const rule = {
-                ...info, quickFix,
-                fixType: fixType || Default.FixType,
-                language: language || globalLanguage,
-                regex: new RegExp(regex, (flags || globalFlags).replace(/[^dimsuy]/g, '') + 'g'),
-                severity: vscode.DiagnosticSeverity[severity!] ??
-                          vscode.DiagnosticSeverity[Default.Severity]
-            };
-            if (rule.fixType === 'reorder_asc' ||
-                rule.fixType === 'reorder_desc') {
-                rule.quickFix = rule.quickFix || '$&';
+    static monitorRules() {
+        vscode.workspace.onDidChangeConfiguration(event => {
+            if (event.affectsConfiguration(ConfigSection.Name)) {
+                this.rules = this.getRules();
             }
-            Rule.rules.push(rule);
-        }
+        });
+    }
+
+    static getRules(): Rule[] {
+        const config = vscode.workspace.getConfiguration(ConfigSection.Name);
+
+        const ruleConfigs = config.get<Config[]>(ConfigSection.Rules) ?? [];
+        const globalFlags = config.get<string>(ConfigSection.Flags) ?? Default.Flags;
+        const globalLanguage = config.get<string>(ConfigSection.Language) || Default.Language;
+
+        return ruleConfigs
+            .filter(({
+                fix,
+                fixType,
+                flags,
+                language,
+                message,
+                name,
+                pattern,
+                severity }) => (
+                (fixType === undefined || FixTypes[fixType] !== undefined) &&
+                (flags === undefined || /^[dimsuy]*$/.test(flags)) &&
+                (!!message) &&
+                (language === undefined || !!language) &&
+                (!!name) &&
+                (!!pattern) &&
+                (severity === undefined || vscode.DiagnosticSeverity[severity] !== undefined) &&
+                (fix === undefined || fix !== null)
+            ))
+            .map(({
+                fix,
+                fixType,
+                flags = globalFlags,
+                language = globalLanguage,
+                pattern,
+                severity,
+                ...info }) => ({
+                ...info,
+                fixType: fixType || Default.FixType,
+                language: language || Default.Language,
+                fix: (fixType || Default.FixType) === 'replace'
+                          ? fix
+                          : fix || Default.Fix,
+                regex: new RegExp(pattern, flags + 'g'),
+                severityCode: vscode.DiagnosticSeverity[severity!] ??
+                          vscode.DiagnosticSeverity[Default.Severity]
+            } as Rule));
     }
 }

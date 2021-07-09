@@ -4,31 +4,40 @@ import { sortedIndex } from './util';
 
 export const DiagnosticCollectionName = 'relint';
 
+export class RuleDiagnostic extends vscode.Diagnostic
+{
+    constructor(
+            readonly ruleId: string,
+            range: vscode.Range,
+            message: string,
+            severity?: vscode.DiagnosticSeverity) {
+        super(range, message, severity);
+    }
+}
+
 export default function activateDiagnostics(context: vscode.ExtensionContext): void {
     const diagnostics = vscode.languages.createDiagnosticCollection(DiagnosticCollectionName);
     context.subscriptions.push(diagnostics);
 
     if (vscode.window.activeTextEditor) {
-        refreshDiagnostics(vscode.window.activeTextEditor.document, diagnostics, Rule.all);
+        refreshDiagnostics(vscode.window.activeTextEditor.document, diagnostics);
     }
 
     vscode.workspace.onDidChangeConfiguration(event => {
         if (event.affectsConfiguration(ConfigSection.Name) && vscode.window.activeTextEditor) {
-            refreshDiagnostics(vscode.window.activeTextEditor.document, diagnostics, Rule.all);
+            refreshDiagnostics(vscode.window.activeTextEditor.document, diagnostics);
         }
     });
 
     context.subscriptions.push(
         vscode.window.onDidChangeActiveTextEditor(editor => {
-            if (editor) {
-                refreshDiagnostics(editor.document, diagnostics, Rule.all);
-            }
+            if (editor) { refreshDiagnostics(editor.document, diagnostics); }
         })
     );
 
     context.subscriptions.push(
         vscode.workspace.onDidChangeTextDocument(event =>
-            refreshDiagnostics(event.document, diagnostics, Rule.all))
+            refreshDiagnostics(event.document, diagnostics))
     );
 
     context.subscriptions.push(
@@ -36,15 +45,12 @@ export default function activateDiagnostics(context: vscode.ExtensionContext): v
     );
 }
 
-function refreshDiagnostics(
-            document: vscode.TextDocument,
-            diagnostics: vscode.DiagnosticCollection,
-            checkRules: Rule[]): void {
-    const rules = checkRules.filter(rule => rule.language === document.languageId);
+function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.DiagnosticCollection): void {
+    const rules = Rule.all.filter(rule => rule.language === document.languageId);
+
+    const diagnosticList: RuleDiagnostic[] = [];
 
     if (rules.length > 0) {
-        const diagnosticList: vscode.Diagnostic[] = [];
-
         const text = document.getText();
         for (const rule of rules) {
             const matcher = new RegExp(rule.regex);
@@ -59,15 +65,15 @@ function refreshDiagnostics(
                     diagnosticList.push(diagnostic);
                 }
             } else {
-                if (rule.quickFix === undefined) { continue; }
+                if (rule.fix === undefined) { continue; }
 
                 const tokenList: string[] = [];
                 let iterCount = 0;
                 let prevMatch: RegExpExecArray | null;
-                let diagnostic: vscode.Diagnostic | undefined;
+                let diagnostic: RuleDiagnostic | undefined;
 
                 while (matchArray = matcher.exec(text)) {
-                    const token = matchArray[0].replace(rule.regex, rule.quickFix);
+                    const token = matchArray[0].replace(rule.regex, rule.fix);
                     const index = rule.fixType === 'reorder_asc'
                         ? sortedIndex(tokenList, token, (a, b) => a < b)
                         : sortedIndex(tokenList, token, (a, b) => a > b);
@@ -84,7 +90,7 @@ function refreshDiagnostics(
 
                         const range = rangeFromMatch(document, matchArray);
                         diagnostic.relatedInformation!.push({
-                            location: { uri: document.uri, range: range },
+                            location: { uri: document.uri, range },
                             message: 'related rule violation here'
                         });
                     }
@@ -97,20 +103,20 @@ function refreshDiagnostics(
                 if (diagnostic) { diagnosticList.push(diagnostic); }
             }
         }
-
-        diagnostics.set(document.uri, diagnosticList);
     }
+
+    diagnostics.set(document.uri, diagnosticList);
 }
 
 function createDiagnostic(
             source: string,
             document: vscode.TextDocument,
             matchArray: RegExpExecArray,
-            rule: Rule): vscode.Diagnostic {
+            rule: Rule): RuleDiagnostic {
     const range = rangeFromMatch(document, matchArray);
-    const diagnostic = new vscode.Diagnostic(range, rule.message, rule.severity);
+    const diagnostic = new RuleDiagnostic(rule.id, range, rule.message, rule.severityCode);
     diagnostic.source = source;
-    diagnostic.code = rule.id;
+    diagnostic.code = rule.name;
     return diagnostic;
 }
 

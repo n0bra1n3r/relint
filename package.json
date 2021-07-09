@@ -57,32 +57,32 @@
                             "default": [],
                             "items": {
                                 "required": [
-                                    "id",
-                                    "regex",
+                                    "name",
+                                    "pattern",
                                     "message"
                                 ],
                                 "properties": {
-                                    "id": {
+                                    "language": {
                                         "type": "string",
+                                        "default": "plaintext",
                                         "minLength": 1,
-                                        "description": "A descriptive and unique ID for the rule."
+                                        "description": "The programming language the rule applies to."
                                     },
-                                    "regex": {
+                                    "name": {
                                         "type": "string",
                                         "minLength": 1,
-                                        "description": "A regular expression to match a rule violation."
+                                        "description": "A concise name for the rule."
+                                    },
+                                    "pattern": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "description": "A regular expression pattern to match a rule violation."
                                     },
                                     "flags": {
                                         "type": "string",
                                         "pattern": "^(?:([dimsuy])(?!.*\\1))+$",
                                         "patternErrorMessage": "Regex flags must be a combination of the characters 'd', 'i', 'm', 's', 'u', 'y'.",
                                         "description": "Regular expression flags used by the rule violation matcher."
-                                    },
-                                    "language": {
-                                        "type": "string",
-                                        "default": "plaintext",
-                                        "minLength": 1,
-                                        "description": "The programming language the rule applies to."
                                     },
                                     "message": {
                                         "type": "string",
@@ -100,7 +100,7 @@
                                         "default": "Warning",
                                         "description": "Severity of the diagnostic to display."
                                     },
-                                    "quickFix": {
+                                    "fix": {
                                         "type": "string",
                                         "description": "The fix to apply. Substitution tokens starting with `$` can be used."
                                     },
