@@ -50,57 +50,57 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
         const text = document.getText();
         for (const rule of rules) {
             const matcher = new RegExp(rule.regex);
-            let matchArray: RegExpExecArray | null;
+            let matchGroups: RegExpExecArray | null;
+
             if (rule.fixType === 'replace') {
-                while (matchArray = matcher.exec(text)) {
+                while (matchGroups = matcher.exec(text)) {
                     const diagnostic = createDiagnostic(
                         diagnostics.name,
                         document,
-                        matchArray,
+                        matchGroups,
                         rule);
                     diagnosticList.push(diagnostic);
                 }
             } else {
                 if (rule.fix === undefined) { continue; }
 
-                const firstMatch = matcher.exec(text);
-                if (!firstMatch) { continue; }
-
-                const diagnostic = createDiagnostic(
-                    diagnostics.name,
-                    document,
-                    firstMatch!,
-                    rule);
-                diagnostic.relatedInformation = [];
-
+                let diagnostic: Diagnostic | undefined;
                 const tokenList: string[] = [];
+
                 let iterCount = 0;
                 let isOrdered = true;
 
-                matchArray = firstMatch;
-                while (matchArray) {
-                    const range = rangeFromMatch(document, matchArray);
-                    diagnostic.relatedInformation.push({
-                        location: { uri: document.uri, range },
-                        message: 'related match here'
-                    });
-
-                    const token = matchArray[0].replace(rule.regex, rule.fix);
-                    const index = rule.fixType === 'reorder_asc'
-                        ? sortedIndex(tokenList, token, (a, b) => a < b)
-                        : sortedIndex(tokenList, token, (a, b) => a > b);
-
-                    if (iterCount != index) {
-                        isOrdered = false;
-                        break;
+                while (matchGroups = matcher.exec(text)) {
+                    if (!diagnostic) {
+                        diagnostic = createDiagnostic(
+                            diagnostics.name,
+                            document,
+                            matchGroups,
+                            rule);
+                        diagnostic.relatedInformation = [];
+                    } else {
+                        diagnostic.relatedInformation!.push({
+                            location: {
+                                uri: document.uri,
+                                range : rangeFromMatch(document, matchGroups)
+                            },
+                            message: 'related match here'
+                        });
                     }
 
-                    tokenList.splice(index, 0, token);
-                    iterCount += 1;
-                    matchArray = matcher.exec(text);
+                    if (isOrdered) {
+                        const token = matchGroups[0].replace(rule.regex, rule.fix);
+                        const index = rule.fixType === 'reorder_asc'
+                            ? sortedIndex(tokenList, token, (a, b) => a < b)
+                            : sortedIndex(tokenList, token, (a, b) => a > b);
+                        tokenList.splice(index, 0, token);
+
+                        isOrdered = iterCount == index;
+                        iterCount += 1;
+                    }
                 }
 
-                if (!isOrdered) { diagnosticList.push(diagnostic); }
+                if (!isOrdered) { diagnosticList.push(diagnostic!); }
             }
         }
     }

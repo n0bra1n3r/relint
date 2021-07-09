@@ -202,7 +202,7 @@ function applyQuickFixes(
 
             tuples.splice(index, 0, tuple);
         }
-
+        console.log(tuples);
         for (const [i, [j]] of tuples.entries()) {
             edits.push(new vscode.TextEdit(ranges[i], document.getText(ranges[j])));
         }
