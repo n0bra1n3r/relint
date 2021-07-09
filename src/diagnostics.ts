@@ -4,7 +4,7 @@ import { sortedIndex } from './util';
 
 export const DiagnosticCollectionName = 'relint';
 
-export class RuleDiagnostic extends vscode.Diagnostic
+export class Diagnostic extends vscode.Diagnostic
 {
     constructor(
             readonly ruleId: string,
@@ -48,7 +48,7 @@ export default function activateDiagnostics(context: vscode.ExtensionContext): v
 function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.DiagnosticCollection): void {
     const rules = Rule.all.filter(rule => rule.language === document.languageId);
 
-    const diagnosticList: RuleDiagnostic[] = [];
+    const diagnosticList: Diagnostic[] = [];
 
     if (rules.length > 0) {
         const text = document.getText();
@@ -70,7 +70,7 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
                 const tokenList: string[] = [];
                 let iterCount = 0;
                 let prevMatch: RegExpExecArray | null;
-                let diagnostic: RuleDiagnostic | undefined;
+                let diagnostic: Diagnostic | undefined;
 
                 while (matchArray = matcher.exec(text)) {
                     const token = matchArray[0].replace(rule.regex, rule.fix);
@@ -112,9 +112,9 @@ function createDiagnostic(
             source: string,
             document: vscode.TextDocument,
             matchArray: RegExpExecArray,
-            rule: Rule): RuleDiagnostic {
+            rule: Rule): Diagnostic {
     const range = rangeFromMatch(document, matchArray);
-    const diagnostic = new RuleDiagnostic(rule.id, range, rule.message, rule.severityCode);
+    const diagnostic = new Diagnostic(rule.id, range, rule.message, rule.severityCode);
     diagnostic.source = source;
     diagnostic.code = rule.name;
     return diagnostic;
