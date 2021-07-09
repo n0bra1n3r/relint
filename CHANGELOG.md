@@ -22,3 +22,6 @@ All notable changes to the "relint" extension will be documented in this file.
 
 ## 0.2.0
 - Add reodering support
+
+## 0.2.1
+- Improve reodering and fix diagnostics issues
