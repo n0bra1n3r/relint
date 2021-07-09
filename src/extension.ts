@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import activateDiagnostics from './diagnostics';
-import activateFixes from './quickfixes';
+import activateFixes from './fixes';
 import Rule from './rule';
 
 export function activate(context: vscode.ExtensionContext) {

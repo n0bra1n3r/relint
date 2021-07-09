@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { RuleDiagnostic, DiagnosticCollectionName } from './diagnostics';
+import { Diagnostic, DiagnosticCollectionName } from './diagnostics';
 import Rule, { ConfigSection, FixType } from './rule';
 import { sortedIndex } from './util';
 
@@ -113,7 +113,7 @@ class QuickFixProvider implements vscode.CodeActionProvider {
             document: vscode.TextDocument,
             range: vscode.Range,
             context: vscode.CodeActionContext): vscode.CodeAction[] {
-        const edits = applyQuickFixes(document, <RuleDiagnostic[]>context.diagnostics, this.fixes);
+        const edits = applyQuickFixes(document, <Diagnostic[]>context.diagnostics, this.fixes);
         if (edits.length === 0) { return []; }
 
         const action = new vscode.CodeAction('Fix this issue', vscode.CodeActionKind.QuickFix);
@@ -141,7 +141,7 @@ class FixAllProvider implements vscode.CodeActionProvider {
             .getDiagnostics(document.uri)
             .filter(diagnostic => diagnostic.source === DiagnosticCollectionName);
 
-        const edits = applyQuickFixes(document, <RuleDiagnostic[]>diagnostics, this.fixes);
+        const edits = applyQuickFixes(document, <Diagnostic[]>diagnostics, this.fixes);
         if (edits.length === 0) { return []; }
 
         fixAllAction.edit.set(document.uri, edits);
@@ -152,11 +152,11 @@ class FixAllProvider implements vscode.CodeActionProvider {
 
 function applyQuickFixes(
         document: vscode.TextDocument,
-        diagnostics: RuleDiagnostic[],
+        diagnostics: Diagnostic[],
         fixes: FixMap): vscode.TextEdit[] {
     const edits: vscode.TextEdit[] = [];
 
-    const reorderDiagnostics: RuleDiagnostic[] = [];
+    const reorderDiagnostics: Diagnostic[] = [];
     for (const diagnostic of diagnostics) {
         const fix = fixes[diagnostic.ruleId];
         if (!fix) { continue; }
