@@ -39,10 +39,6 @@ export default function activateDiagnostics(context: vscode.ExtensionContext): v
         vscode.workspace.onDidChangeTextDocument(event =>
             refreshDiagnostics(event.document, diagnostics))
     );
-
-    context.subscriptions.push(
-        vscode.workspace.onDidCloseTextDocument(document => diagnostics.delete(document.uri))
-    );
 }
 
 function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.DiagnosticCollection): void {
@@ -67,40 +63,44 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
             } else {
                 if (rule.fix === undefined) { continue; }
 
+                const firstMatch = matcher.exec(text);
+                if (!firstMatch) { continue; }
+
+                const diagnostic = createDiagnostic(
+                    diagnostics.name,
+                    document,
+                    firstMatch!,
+                    rule);
+                diagnostic.relatedInformation = [];
+
                 const tokenList: string[] = [];
                 let iterCount = 0;
-                let prevMatch: RegExpExecArray | null;
-                let diagnostic: Diagnostic | undefined;
+                let isOrdered = true;
 
-                while (matchArray = matcher.exec(text)) {
+                matchArray = firstMatch;
+                while (matchArray) {
+                    const range = rangeFromMatch(document, matchArray);
+                    diagnostic.relatedInformation.push({
+                        location: { uri: document.uri, range },
+                        message: 'related match here'
+                    });
+
                     const token = matchArray[0].replace(rule.regex, rule.fix);
                     const index = rule.fixType === 'reorder_asc'
                         ? sortedIndex(tokenList, token, (a, b) => a < b)
                         : sortedIndex(tokenList, token, (a, b) => a > b);
 
                     if (iterCount != index) {
-                        if (!diagnostic) {
-                            diagnostic = createDiagnostic(
-                                diagnostics.name,
-                                document,
-                                prevMatch!,
-                                rule);
-                            diagnostic.relatedInformation = [];
-                        }
-
-                        const range = rangeFromMatch(document, matchArray);
-                        diagnostic.relatedInformation!.push({
-                            location: { uri: document.uri, range },
-                            message: 'related rule violation here'
-                        });
+                        isOrdered = false;
+                        break;
                     }
 
                     tokenList.splice(index, 0, token);
                     iterCount += 1;
-                    prevMatch = matchArray;
+                    matchArray = matcher.exec(text);
                 }
 
-                if (diagnostic) { diagnosticList.push(diagnostic); }
+                if (!isOrdered) { diagnosticList.push(diagnostic); }
             }
         }
     }
