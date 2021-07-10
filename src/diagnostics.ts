@@ -82,7 +82,7 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
                         diagnostic.relatedInformation!.push({
                             location: {
                                 uri: document.uri,
-                                range : rangeFromMatch(document, matchGroups)
+                                range: rangeFromMatch(document, matchGroups)
                             },
                             message: 'related match here'
                         });
