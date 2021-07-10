@@ -3,8 +3,6 @@ import { Diagnostic, DiagnosticCollectionName } from './diagnostics';
 import Rule, { ConfigSection, FixType } from './rule';
 import { sortedIndex } from './util';
 
-const MaxFixIterations = 64;
-
 type Fix = {
     language: string,
     regex: RegExp,
@@ -48,7 +46,7 @@ export default function activateFixes(context: vscode.ExtensionContext) {
 }
 
 function getFixes(): FixMap {
-    const fixes = Rule.all
+    return Rule.all
         .filter(rule => rule.fix !== undefined)
         .reduce((accumulator, rule) => ({
             ...accumulator, [rule.id]: {
@@ -56,12 +54,9 @@ function getFixes(): FixMap {
                 regex: rule.regex,
                 ruleId: rule.id,
                 string: rule.fix!,
-                type: rule.fixType,
-                dispose: () => {}
+                type: rule.fixType
             }
         }), <FixMap>{});
-
-    return fixes;
 }
 
 function registerFixes(context: vscode.ExtensionContext, fixes: FixMap) {
@@ -113,7 +108,7 @@ class QuickFixProvider implements vscode.CodeActionProvider {
             document: vscode.TextDocument,
             range: vscode.Range,
             context: vscode.CodeActionContext): vscode.CodeAction[] {
-        const edits = applyQuickFixes(document, <Diagnostic[]>context.diagnostics, this.fixes);
+        const edits = applyFixes(document, <Diagnostic[]>context.diagnostics, this.fixes);
         if (edits.length === 0) { return []; }
 
         const action = new vscode.CodeAction('Fix this issue', vscode.CodeActionKind.QuickFix);
@@ -141,7 +136,7 @@ class FixAllProvider implements vscode.CodeActionProvider {
             .getDiagnostics(document.uri)
             .filter(diagnostic => diagnostic.source === DiagnosticCollectionName);
 
-        const edits = applyQuickFixes(document, <Diagnostic[]>diagnostics, this.fixes);
+        const edits = applyFixes(document, <Diagnostic[]>diagnostics, this.fixes);
         if (edits.length === 0) { return []; }
 
         fixAllAction.edit.set(document.uri, edits);
@@ -150,63 +145,65 @@ class FixAllProvider implements vscode.CodeActionProvider {
     }
 }
 
-function applyQuickFixes(
+function applyFixes(
         document: vscode.TextDocument,
         diagnostics: Diagnostic[],
         fixes: FixMap): vscode.TextEdit[] {
     const edits: vscode.TextEdit[] = [];
 
-    const reorderDiagnostics: Diagnostic[] = [];
-    for (const diagnostic of diagnostics) {
-        const fix = fixes[diagnostic.ruleId];
+    for (const { ruleId, range, relatedInformation: info = [] } of diagnostics) {
+        const fix = fixes[ruleId];
         if (!fix) { continue; }
 
-        if (fix.type !== 'replace') {
-            reorderDiagnostics.push(diagnostic);
-            continue;
-        }
+        const ranges = [
+            range, ...info.map(({ location: { range } }) => range)
+        ];
 
-        const matcher = new RegExp(fix.regex);
-        let fixText = document.getText(diagnostic.range);
-        let fixIter = 0;
-
-        while (true) {
-            fixText = fixText.replace(fix.regex, fix.string);
-            if (!matcher.test(fixText) ||
-                // required to avoid infinite loops
-                (fixIter += 1) > MaxFixIterations) { break; }
-        }
-
-        edits.push(new vscode.TextEdit(diagnostic.range, fixText));
-    }
-
-    for (const diagnostic of reorderDiagnostics) {
-        const fix = fixes[diagnostic.ruleId];
-
-        let fixText = document.getText(diagnostic.range);
-        let sortTok = fixText.replace(fix.regex, fix.string);
-
-        const ranges = [diagnostic.range];
-        const tuples: [number, string][] = [[0, sortTok]];
-
-        for (const [i, info] of diagnostic.relatedInformation!.entries()) {
-            ranges.push(info.location.range);
-
-            fixText = document.getText(info.location.range);
-            sortTok = fixText.replace(fix.regex, fix.string);
-
-            const tuple: [number, string] = [i + 1, sortTok];
-            const index = fix.type === 'reorder_asc'
-                ? sortedIndex(tuples, tuple, ([_i, a], [_j, b]) => a < b)
-                : sortedIndex(tuples, tuple, ([_i, a], [_j, b]) => a > b);
-
-            tuples.splice(index, 0, tuple);
-        }
-        console.log(tuples);
-        for (const [i, [j]] of tuples.entries()) {
-            edits.push(new vscode.TextEdit(ranges[i], document.getText(ranges[j])));
+        switch (fix.type) {
+            case 'replace':
+                edits.push(...applyReplaceFix(document, ranges, fix));
+                break;
+            case 'reorder_asc':
+            case 'reorder_desc':
+                edits.push(...applyReorderFix(document, ranges, fix));
+                break;
         }
     }
 
     return edits;
+}
+
+function applyReplaceFix(
+            document: vscode.TextDocument,
+            fixRanges: vscode.Range[],
+            fix: Fix): vscode.TextEdit[] {
+    return fixRanges.map(range =>
+        new vscode.TextEdit(range, document
+            .getText(range)
+            .replace(fix.regex, fix.string)));
+}
+
+function applyReorderFix(
+            document: vscode.TextDocument,
+            fixRanges: vscode.Range[],
+            fix: Fix): vscode.TextEdit[] {
+    const ranges: vscode.Range[] = [];
+    const sorter: [number, string][] = [];
+
+    for (const [i, range] of fixRanges.entries()) {
+        ranges.push(range);
+
+        const fixText = document.getText(range);
+        const sortTok = fixText.replace(fix.regex, fix.string);
+
+        const tuple: [number, string] = [i, sortTok];
+        const index = fix.type === 'reorder_asc'
+            ? sortedIndex(sorter, tuple, ([_i, a], [_j, b]) => a < b)
+            : sortedIndex(sorter, tuple, ([_i, a], [_j, b]) => a > b);
+
+        sorter.splice(index, 0, tuple);
+    }
+
+    return sorter.map(([j], i) =>
+        new vscode.TextEdit(ranges[i], document.getText(ranges[j])));
 }
