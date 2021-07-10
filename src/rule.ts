@@ -44,6 +44,7 @@ export default class Rule
     private static rules: Rule[] = [];
 
     private constructor(
+            readonly id: string,
             readonly fixType: FixType,
             readonly language: string,
             readonly message: string,
@@ -51,10 +52,6 @@ export default class Rule
             readonly regex: RegExp,
             readonly severityCode: vscode.DiagnosticSeverity,
             readonly fix?: string) { }
-
-    public get id(): string {
-        return `/${this.regex.source}/${this.regex.flags}`;
-    }
 
     public static get all(): Rule[] {
         return this.rules;
@@ -108,6 +105,7 @@ export default class Rule
                 severity,
                 ...info }) => ({
                 ...info,
+                id: `/${pattern}/${flags}`,
                 fixType: fixType || Default.FixType,
                 language: language || Default.Language,
                 fix: (fixType || Default.FixType) === 'replace'
@@ -116,6 +114,6 @@ export default class Rule
                 regex: new RegExp(pattern, flags + 'g'),
                 severityCode: vscode.DiagnosticSeverity[severity!] ??
                           vscode.DiagnosticSeverity[Default.Severity]
-            } as Rule));
+            }));
     }
 }
