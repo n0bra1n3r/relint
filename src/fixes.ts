@@ -4,6 +4,7 @@ import Rule, { ConfigSection, FixType } from './rule';
 import { sortedIndex } from './util';
 
 type Fix = {
+    group: string,
     language: string,
     regex: RegExp,
     ruleId: string,
@@ -52,6 +53,7 @@ function getFixes(): FixMap {
         .filter(rule => rule.fix !== undefined)
         .reduce((accumulator, rule) => ({
             ...accumulator, [rule.id]: {
+                group: rule.name,
                 language: rule.language,
                 regex: rule.regex,
                 ruleId: rule.id,
@@ -162,10 +164,12 @@ function applyFixes(
             return range;
         }, fullRange);
         const rangeText = document.getText(editRange);
+        const fixGroup = Object.values(fixes)
+            .filter(fix => fix.group === diagnostic.code);
 
         let fixedText: string | undefined;
         for (let fixIter = 0; fixIter < MaxFixIters; fixIter += 1) {
-            for (const fix of Object.values(fixes)) {
+            for (const fix of fixGroup) {
                 switch (fix.type) {
                     case 'replace':
                         fixedText = applyReplaceFix(fixedText ?? rangeText, fix)
