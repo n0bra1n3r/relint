@@ -6,14 +6,6 @@ export const DiagnosticCollectionName = 'relint';
 
 export class Diagnostic extends vscode.Diagnostic
 {
-    constructor(
-            readonly ruleId: string,
-            range: vscode.Range,
-            message: string,
-            severity?: vscode.DiagnosticSeverity) {
-        super(range, message, severity);
-    }
-
     public get effectiveRange(): vscode.Range {
         return this.relatedInformation?.reduce((range, info) =>
             range.union(info.location.range), this.range)
@@ -61,12 +53,12 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
 
             if (rule.fixType === 'replace') {
                 while (array = regExp.exec(text)) {
-                    const entry = createDiagnostic(
-                        diagnostics.name,
-                        document,
-                        array,
-                        rule);
-                    diagnosticList.push(entry);
+                    const range = rangeFromMatch(document, array);
+                    const entry = mergeDiagnostic(diagnosticList, document, range, rule)
+                        ?? createDiagnostic(diagnostics.name, range, rule);
+                    if (!diagnosticList.includes(entry)) {
+                        diagnosticList.push(entry);
+                    }
                 }
             } else {
                 if (rule.fix === undefined) { continue; }
@@ -74,24 +66,15 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
                 const sorter: string[] = [];
 
                 let entry: Diagnostic | undefined;
-                let count = 0;
                 let isBad = false;
+                let count = 0;
                 while (array = regExp.exec(text)) {
+                    const range = rangeFromMatch(document, array);
                     if (!entry) {
-                        entry = createDiagnostic(
-                            diagnostics.name,
-                            document,
-                            array,
-                            rule);
-                        entry.relatedInformation = [];
+                        entry = mergeDiagnostic(diagnosticList, document, range, rule)
+                            ?? createDiagnostic(diagnostics.name, range, rule);
                     } else {
-                        entry.relatedInformation!.push({
-                            location: {
-                                uri: document.uri,
-                                range: rangeFromMatch(document, array)
-                            },
-                            message: 'related match here'
-                        });
+                        addRelatedInfo(entry, document, range);
                     }
 
                     if (!isBad) {
@@ -107,7 +90,9 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
                     }
                 }
 
-                if (isBad) { diagnosticList.push(entry!); }
+                if (isBad && !diagnosticList.includes(entry!)) {
+                    diagnosticList.push(entry!);
+                }
             }
         }
     }
@@ -115,13 +100,41 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
     diagnostics.set(document.uri, diagnosticList);
 }
 
-function createDiagnostic(
-            source: string,
+function mergeDiagnostic(
+            diagnosticList: Diagnostic[],
             document: vscode.TextDocument,
-            matchArray: RegExpExecArray,
-            rule: Rule): Diagnostic {
-    const range = rangeFromMatch(document, matchArray);
-    const diagnostic = new Diagnostic(rule.id, range, rule.message, rule.severityCode);
+            range: vscode.Range,
+            rule: Rule): Diagnostic | undefined {
+    let diagnostic = diagnosticList.find(diagnostic =>
+        diagnostic.code === rule.name &&
+        diagnostic.effectiveRange.intersection(range));
+    if (diagnostic) {
+        if (diagnostic.range.intersection(range)) {
+            diagnostic.range = diagnostic.range.union(range);
+        } else {
+            addRelatedInfo(diagnostic, document, range);
+        }
+    }
+    return diagnostic;
+}
+
+function addRelatedInfo(diagnostic: Diagnostic, document: vscode.TextDocument, range: vscode.Range) {
+    if (diagnostic.relatedInformation === undefined)
+        diagnostic.relatedInformation = [];
+    const info = diagnostic.relatedInformation.find(info =>
+        info.location.range.intersection(range));
+    if (info) {
+        info.location.range = info.location.range.union(range);
+    } else {
+        diagnostic.relatedInformation.push({
+            location: { uri: document.uri, range },
+            message: 'related match here'
+        });
+    }
+}
+
+function createDiagnostic(source: string, range: vscode.Range, rule: Rule): Diagnostic {
+    const diagnostic = new Diagnostic(range, rule.message, rule.severityCode);
     diagnostic.source = source;
     diagnostic.code = rule.name;
     return diagnostic;
@@ -130,9 +143,7 @@ function createDiagnostic(
 function rangeFromMatch(document: vscode.TextDocument, matchArray: RegExpExecArray): vscode.Range {
     const matchStart = matchArray.index;
     const matchLength = matchArray[0].length;
-
     const startPosition = document.positionAt(matchStart);
     const endPosition = document.positionAt(matchStart + matchLength);
-
     return new vscode.Range(startPosition, endPosition);
 }
