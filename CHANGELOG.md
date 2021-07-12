@@ -34,3 +34,6 @@ All notable changes to the "relint" extension will be documented in this file.
 
 ## 0.4.1
 - Recursive fixes are only done for rules in the same group
+
+## 0.4.2
+- Update readme
