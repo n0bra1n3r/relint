@@ -1,28 +1,131 @@
+# relint
+
+`relint` is a language and framework agnostic linter. Its main purpose is to serve as tooling for programming languages that do not yet have their own specialized linters.
+
 ## Demo
 
-relint is a language and framework agnostic linter. Here is an example configuration for Nim:
+Here is a configuration I use for one of my [Nim](https://nim-lang.org/) projects:
 
 ```json
+// .vscode/settings.json
 {
     ...
+
     "relint": {
+        "flags": "im",
+        "language": "nim",
         "rules": [
             {
-                "id": "syntax-assert",
-                "regex": "assert\\((.+), (.+)\\)",
-                "flags": "ig",
-                "language": "nim",
-                "message": "syntax: use `assert <condition>: <message>`",
+                "fix": "(addr)$1$2$3$4",
+                "message": "syntax: use command syntax for `addr`",
+                "name": "syntax-addr",
+                "pattern": "(?<=\\W|^)(?:addr\\((.+)\\)|addr (.+)|addr: (.+)|(.+)\\.addr)",
                 "severity": "Warning",
-                "quickFix": "assert $1: $2"
-            }
+            },
+            {
+                "fix": "{.$1 $2}",
+                "message": "syntax: use spaces to separate pragmas",
+                "name": "syntax-pragma",
+                "pattern": "{\\.(.+),\\ *(.*)}",
+                "severity": "Warning",
+            },
         ]
-    }
+    },
+
+    ...
 }
 ```
 
-This configuration issues a warning for the `assert` function call syntax matched by a regular expression, telling the user to use Nim's command syntax instead. `Quick Fix` and `Fix All` options are available from the editor context menus.
+![Demo1](assets/relint-demo1.gif?raw=true)
 
-```nim
-assert(false, "test assert") # becomes: `assert false: "test assert"`
+I use an awesome plugin called [Error Lens](https://marketplace.visualstudio.com/items?itemName=usernamehw.errorlens) in conjunction with this to make issues easier to spot.
+
+## Features
+
+`relint` produces configurable diagnostics for *rule violations*, each of which are described by a [regular expression](https://www.regular-expressions.info/). Rule violations can also be assigned fixes, which are repeatedly applied until no matching rule violations are found. Fixes can perform one of two operations:
+
+- **Replace** the matched text
+- **Reorder** the matched text
+
+The configuration options can be found in the `contributes.configuration` section of the [package.json](package.json).
+
+## More examples
+
+The following is a more complex example that uses the **reorder** feature combined with the **replace** function to organize imports at the top of a Nim file.
+
+```json
+// .vscode/settings.json
+{
+    ...
+
+    "relint": {
+        "flags": "im",
+        "language": "nim",
+        "rules": [
+            {
+                // 1
+                "fixType": "reorder_desc",
+                "fix": "$1",
+                "message": "organization: unordered imports",
+                "name": "organization-import",
+                "pattern": "^import ([.\\w]+/).+",
+            },
+            {
+                // 2
+                "fixType": "reorder_asc",
+                "message": "organization: unordered import group",
+                "name": "organization-import",
+                "pattern": "^import \\./.+",
+            },
+            {
+                // 2.1
+                "fixType": "reorder_asc",
+                "message": "organization: unordered import group",
+                "name": "organization-import",
+                "pattern": "^import \\.\\./.+",
+            },
+            {
+                // 2.2
+                "fixType": "reorder_asc",
+                "message": "organization: unordered import group",
+                "name": "organization-import",
+                "pattern": "^import src/.+",
+            },
+            {
+                // 2.3
+                "fixType": "reorder_asc",
+                "message": "organization: unordered import group",
+                "name": "organization-import",
+                "pattern": "^import std/.+",
+            },
+            {
+                // 3
+                "fix": "$1\r\n$4",
+                "message": "organization: bad spacing in import group",
+                "name": "organization-import",
+                "pattern": "(^import ([.\\w]+)/.+)(\r\n){2,}(^import \\2/.+)",
+            },
+            {
+                // 4
+                "fix": "$1\r\n\r\n$4",
+                "message": "organization: bad spacing in import group",
+                "name": "organization-import",
+                "pattern": "(^import ([.\\w]+)/.+)(\r\n|(?:\r\n){3,})(^import (?!\\2/).+)",
+            },
+        ]
+    },
+
+    ...
+}
 ```
+
+![Demo2](assets/relint-demo2.gif?raw=true)
+
+This configuration performs the following fixes:
+
+1. Order imports by root folder in descending alphabetical order,
+1. order each *import group* in ascending alphabetical order,
+1. ensures import groups are separated by 1 newline,
+1. and finally, ensures imports within each import group do not have newlines between them.
+
+The `name` configuration plays an important part here in that all rules with the same name are considered part of a *rule group*. Rules in such groups that produce diagnostics in overlapping ranges of text behave as one rule that can match multiple rule violations and apply the corresponding fixes to text in their combined ranges.
