@@ -1,3 +1,4 @@
+import { info } from 'console';
 import * as vscode from 'vscode';
 
 export const enum ConfigSection
@@ -43,6 +44,7 @@ export default class Rule
     private constructor(
             readonly id: string,
             readonly fixType: FixType,
+            readonly isMultiline: boolean,
             readonly language: string,
             readonly message: string,
             readonly name: string,
@@ -91,17 +93,27 @@ export default class Rule
                 (fix === undefined || fix !== null)
             ))
             .map(({
-                fix,
                 fixType,
                 language = globalLanguage,
+                ...info
+            }) => ({
+                ...info,
+                fixType: fixType || Default.FixType,
+                language: language || Default.Language
+            }))
+            .map(({
+                fix,
+                fixType,
                 pattern,
                 severity,
                 ...info }) => ({
                 ...info,
                 id: `/${pattern}/`,
-                fixType: fixType || Default.FixType,
-                language: language || Default.Language,
-                fix: (fixType || Default.FixType) === 'replace'
+                fixType,
+                isMultiline: fixType === 'replace'
+                                ? /\\n|\\r|\\s/.test(pattern)
+                                : true,
+                fix: fixType === 'replace'
                           ? fix
                           : fix || Default.Fix,
                 regex: new RegExp(pattern, 'gim'),
