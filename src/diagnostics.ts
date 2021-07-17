@@ -47,12 +47,10 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
     if (rules.length > 0) {
         const text = document.getText();
         for (const rule of rules) {
-            const regExp = new RegExp(rule.regex);
-
             let array: RegExpExecArray | null;
 
             if (rule.fixType === 'replace') {
-                while (array = regExp.exec(text)) {
+                while (array = rule.regex.exec(text)) {
                     const range = rangeFromMatch(document, array);
                     const entry = mergeDiagnostic(diagnosticList, document, range, rule)
                         ?? createDiagnostic(diagnostics.name, range, rule);
@@ -68,7 +66,7 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
                 let entry: Diagnostic | undefined;
                 let isBad = false;
                 let count = 0;
-                while (array = regExp.exec(text)) {
+                while (array = rule.regex.exec(text)) {
                     const range = rangeFromMatch(document, array);
                     if (!entry) {
                         entry = mergeDiagnostic(diagnosticList, document, range, rule)

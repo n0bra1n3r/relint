@@ -55,7 +55,7 @@ function getFixes(): FixMap {
             ...accumulator, [rule.id]: {
                 group: rule.name,
                 language: rule.language,
-                regex: rule.regex,
+                regex: new RegExp(rule.regex),
                 ruleId: rule.id,
                 string: rule.fix!,
                 type: rule.fixType
@@ -196,16 +196,17 @@ function applyReplaceFix(text: string, fix: Fix): string | undefined {
 }
 
 function applyReorderFix(text: string, fix: Fix): string | undefined {
-    const regExp = new RegExp(fix.regex);
     const sorter: [number, string][] = [];
     const bucket: [string, number][] = [];
 
     let array: RegExpExecArray | null;
     let doFix = false;
     let count = 0;
-    while (array = regExp.exec(text)) {
+    while (array = fix.regex.exec(text)) {
+        const lastIndex = fix.regex.lastIndex;
         const match = array[0];
         const token = match.replace(fix.regex, fix.string);
+        fix.regex.lastIndex = lastIndex;
 
         const tuple: [number, string] = [count, token];
         const index = fix.type === 'reorder_asc'
