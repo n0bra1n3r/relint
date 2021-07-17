@@ -3,7 +3,6 @@ import * as vscode from 'vscode';
 export const enum ConfigSection
 {
     Name = 'relint',
-    Flags = 'flags',
     Language = 'language',
     Rules = 'rules'
 }
@@ -22,7 +21,6 @@ export type Severity = keyof typeof vscode.DiagnosticSeverity;
 type Config = {
     fix?: string,
     fixType?: FixType,
-    flags?: string,
     language?: string,
     message: string,
     name: string,
@@ -34,7 +32,6 @@ class Default
 {
     static Fix = '$&';
     static FixType: FixType = 'replace';
-    static Flags = '';
     static Language = 'plaintext';
     static Severity: Severity = 'Warning';
 }
@@ -74,21 +71,18 @@ export default class Rule
         const config = vscode.workspace.getConfiguration(ConfigSection.Name);
 
         const ruleConfigs = config.get<Config[]>(ConfigSection.Rules) ?? [];
-        const globalFlags = config.get<string>(ConfigSection.Flags) ?? Default.Flags;
         const globalLanguage = config.get<string>(ConfigSection.Language) || Default.Language;
 
         return ruleConfigs
             .filter(({
                 fix,
                 fixType,
-                flags,
                 language,
                 message,
                 name,
                 pattern,
                 severity }) => (
                 (fixType === undefined || FixTypes[fixType] !== undefined) &&
-                (flags === undefined || /^[dimsuy]*$/.test(flags)) &&
                 (!!message) &&
                 (language === undefined || !!language) &&
                 (!!name) &&
@@ -99,19 +93,18 @@ export default class Rule
             .map(({
                 fix,
                 fixType,
-                flags = globalFlags,
                 language = globalLanguage,
                 pattern,
                 severity,
                 ...info }) => ({
                 ...info,
-                id: `/${pattern}/${flags}`,
+                id: `/${pattern}/`,
                 fixType: fixType || Default.FixType,
                 language: language || Default.Language,
                 fix: (fixType || Default.FixType) === 'replace'
                           ? fix
                           : fix || Default.Fix,
-                regex: new RegExp(pattern, flags + 'g'),
+                regex: new RegExp(pattern, 'gim'),
                 severityCode: vscode.DiagnosticSeverity[severity!] ??
                           vscode.DiagnosticSeverity[Default.Severity]
             }));

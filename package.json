@@ -39,12 +39,6 @@
                         "rules"
                     ],
                     "properties": {
-                        "flags": {
-                            "type": "string",
-                            "pattern": "^(?:([dimsuy])(?!.*\\1))+$",
-                            "patternErrorMessage": "Regex flags must be a combination of the characters 'd', 'i', 'm', 's', 'u', 'y'.",
-                            "description": "The default regular expression flags used by the rule voilation matchers."
-                        },
                         "language": {
                             "type": "string",
                             "default": "plaintext",
@@ -77,12 +71,6 @@
                                         "type": "string",
                                         "minLength": 1,
                                         "description": "A regular expression pattern to match a rule violation."
-                                    },
-                                    "flags": {
-                                        "type": "string",
-                                        "pattern": "^(?:([dimsuy])(?!.*\\1))+$",
-                                        "patternErrorMessage": "Regex flags must be a combination of the characters 'd', 'i', 'm', 's', 'u', 'y'.",
-                                        "description": "Regular expression flags used by the rule violation matcher."
                                     },
                                     "message": {
                                         "type": "string",
