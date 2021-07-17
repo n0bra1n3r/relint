@@ -37,3 +37,6 @@ All notable changes to the "relint" extension will be documented in this file.
 
 ## 0.4.2
 - Update readme
+
+## 0.4.3
+- Improve performance
