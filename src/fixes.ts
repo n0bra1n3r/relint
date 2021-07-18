@@ -179,9 +179,9 @@ function applyFixes(
                         break;
                 }
             }
-            if (!fixedText) { break; }
+            if (fixedText === undefined) { break; }
         }
-        if (fixedText) { edits.push(new vscode.TextEdit(editRange, fixedText)); }
+        if (fixedText !== undefined) { edits.push(new vscode.TextEdit(editRange, fixedText)); }
     }
 
     return edits;
