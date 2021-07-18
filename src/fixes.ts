@@ -50,14 +50,14 @@ export default function activateFixes(context: vscode.ExtensionContext) {
 function getFixes(): Fix[] {
     return Object.values(Rule.all)
         .flat()
-        .filter(rule => rule.fix !== undefined)
+        .filter(rule => rule?.fix !== undefined)
         .map(rule => ({
-            group: rule.name,
-            language: rule.language,
-            regex: new RegExp(rule.regex),
-            ruleId: rule.id,
-            string: rule.fix!,
-            type: rule.fixType
+            group: rule!.name,
+            language: rule!.language,
+            regex: new RegExp(rule!.regex),
+            ruleId: rule!.id,
+            string: rule!.fix!,
+            type: rule!.fixType
         }));
 }
 

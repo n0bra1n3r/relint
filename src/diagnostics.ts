@@ -23,6 +23,7 @@ export default function activateDiagnostics(context: vscode.ExtensionContext): v
 
     context.subscriptions.push(
         vscode.window.onDidChangeActiveTextEditor(editor => {
+            console.log(editor?.document.fileName);
             if (editor) { refreshDiagnostics(editor.document, diagnostics); }
         })
     );
@@ -38,7 +39,7 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
 
     const diagnosticList: Diagnostic[] = [];
 
-    if (rules.length > 0) {
+    if (rules?.length) {
         const numLines = document.lineCount;
 
         for (const rule of rules) {

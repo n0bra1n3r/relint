@@ -35,7 +35,7 @@ class Default
 
 export default class Rule
 {
-    private static rules: { [language: string]: Rule[] } = {};
+    private static rules: Partial<Record<string, Rule[]>> = {};
 
     private constructor(
             readonly id: string,
@@ -48,7 +48,7 @@ export default class Rule
             readonly severityCode: vscode.DiagnosticSeverity,
             readonly fix?: string) { }
 
-    public static get all(): { [language: string]: Rule[] } {
+    public static get all(): Partial<Record<string, Rule[]>> {
         return this.rules;
     }
 
@@ -65,7 +65,7 @@ export default class Rule
         });
     }
 
-    static getRules(): { [language: string]: Rule[] } {
+    static getRules(): Partial<Record<string, Rule[]>> {
         const configuration = vscode.workspace.getConfiguration(ConfigSectionName);
         const globalLanguage = configuration.get<string>('language') || Default.Language;
         const ruleList = configuration.get<Config[]>('rules') ?? [];
@@ -123,6 +123,6 @@ export default class Rule
                                     vscode.DiagnosticSeverity[Default.Severity]
                         }
                     ]
-                }), <{ [language: string]: Rule[] }>{});
+                }), <Partial<Record<string, Rule[]>>>{});
     }
 }
