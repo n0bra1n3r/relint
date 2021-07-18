@@ -52,7 +52,7 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
                     .range
                     .union(document
                         .lineAt(endLine - 1)
-                        .range);
+                        .rangeIncludingLineBreak);
 
                 const text = document.getText(textRange);
                 let array: RegExpExecArray | null;
