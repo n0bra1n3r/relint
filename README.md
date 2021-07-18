@@ -4,6 +4,31 @@
 
 ## Demo
 
+The following is a simple configuration that issues diagnostics for maximum characters exceeded in a line:
+
+```json
+{
+    ...
+
+    [
+        {
+            "message": "format: 80 columns exceeded",
+            "name": "format-line",
+            "pattern": "^.{81,120}$",
+            "severity": "Warning"
+        },
+        {
+            "message": "format: 120 columns exceeded",
+            "name": "format-line",
+            "pattern": "^.{121,}$",
+            "severity": "Error"
+        }
+    ]
+
+    ...
+}
+```
+
 Here is a configuration I use for one of my [Nim](https://nim-lang.org/) projects:
 
 ```json
@@ -12,7 +37,6 @@ Here is a configuration I use for one of my [Nim](https://nim-lang.org/) project
     ...
 
     "relint": {
-        "flags": "im",
         "language": "nim",
         "rules": [
             {
@@ -20,15 +44,15 @@ Here is a configuration I use for one of my [Nim](https://nim-lang.org/) project
                 "message": "syntax: use command syntax for `addr`",
                 "name": "syntax-addr",
                 "pattern": "(?<=\\W|^)(?:addr\\((.+)\\)|addr (.+)|addr: (.+)|(.+)\\.addr)",
-                "severity": "Warning",
+                "severity": "Warning"
             },
             {
                 "fix": "{.$1 $2}",
                 "message": "syntax: use spaces to separate pragmas",
                 "name": "syntax-pragma",
                 "pattern": "{\\.(.+),\\ *(.*)}",
-                "severity": "Warning",
-            },
+                "severity": "Warning"
+            }
         ]
     },
 
@@ -59,7 +83,6 @@ The following is a more complex example that uses the **reorder** feature combin
     ...
 
     "relint": {
-        "flags": "im",
         "language": "nim",
         "rules": [
             {
@@ -68,50 +91,52 @@ The following is a more complex example that uses the **reorder** feature combin
                 "fix": "$1",
                 "message": "organization: unordered imports",
                 "name": "organization-import",
-                "pattern": "^import ([.\\w]+/).+",
+                "pattern": "^import ([.\\w]+/).+"
             },
             {
                 // 2
                 "fixType": "reorder_asc",
                 "message": "organization: unordered import group",
                 "name": "organization-import",
-                "pattern": "^import \\./.+",
+                "pattern": "^import \\./.+"
             },
             {
                 // 2.1
                 "fixType": "reorder_asc",
                 "message": "organization: unordered import group",
                 "name": "organization-import",
-                "pattern": "^import \\.\\./.+",
+                "pattern": "^import \\.\\./.+"
             },
             {
                 // 2.2
                 "fixType": "reorder_asc",
                 "message": "organization: unordered import group",
                 "name": "organization-import",
-                "pattern": "^import src/.+",
+                "pattern": "^import src/.+"
             },
             {
                 // 2.3
                 "fixType": "reorder_asc",
                 "message": "organization: unordered import group",
                 "name": "organization-import",
-                "pattern": "^import std/.+",
+                "pattern": "^import std/.+"
             },
             {
                 // 3
                 "fix": "$1\r\n$4",
                 "message": "organization: bad spacing in import group",
+                "maxLines": 0,
                 "name": "organization-import",
-                "pattern": "(^import ([.\\w]+)/.+)(\r\n){2,}(^import \\2/.+)",
+                "pattern": "(^import ([.\\w]+)/.+)(\\r\\n){2,}(^import \\2/.+)"
             },
             {
                 // 4
                 "fix": "$1\r\n\r\n$4",
                 "message": "organization: bad spacing in import group",
+                "maxLines": 0,
                 "name": "organization-import",
-                "pattern": "(^import ([.\\w]+)/.+)(\r\n|(?:\r\n){3,})(^import (?!\\2/).+)",
-            },
+                "pattern": "(^import ([.\\w]+)/.+)(\\r\\n|(?:\\r\\n){3,})(^import (?!\\2/).+)"
+            }
         ]
     },
 
