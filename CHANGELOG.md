@@ -43,3 +43,6 @@ All notable changes to the "relint" extension will be documented in this file.
 
 ## 0.4.4
 - Add new config 'maxLines' to enable optimizations
+
+## 0.5.0
+- Refactor datastructures to improve performance
