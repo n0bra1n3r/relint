@@ -46,3 +46,6 @@ All notable changes to the "relint" extension will be documented in this file.
 
 ## 0.5.0
 - Refactor datastructures to improve performance
+
+## 0.5.1
+- Fix crash on unsupported language
