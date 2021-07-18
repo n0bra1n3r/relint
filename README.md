@@ -4,31 +4,6 @@
 
 ## Demo
 
-The following is a simple configuration that issues diagnostics for maximum characters exceeded in a line:
-
-```json
-{
-    ...
-
-    [
-        {
-            "message": "format: 80 columns exceeded",
-            "name": "format-line",
-            "pattern": "^.{81,120}$",
-            "severity": "Warning"
-        },
-        {
-            "message": "format: 120 columns exceeded",
-            "name": "format-line",
-            "pattern": "^.{121,}$",
-            "severity": "Error"
-        }
-    ]
-
-    ...
-}
-```
-
 Here is a configuration I use for one of my [Nim](https://nim-lang.org/) projects:
 
 ```json
@@ -154,3 +129,30 @@ This configuration performs the following fixes:
 1. and finally, ensures imports within each import group do not have newlines between them.
 
 The `name` configuration plays an important part here in that all rules with the same name are considered part of a *rule group*. Rules in such groups that produce diagnostics in overlapping ranges of text behave as one rule that can match multiple rule violations and apply the corresponding fixes to text in their combined ranges.
+
+## More examples
+
+The following is a simple configuration that issues diagnostics for maximum characters exceeded in a line:
+
+```json
+{
+    ...
+
+    [
+        {
+            "message": "format: 80 columns exceeded",
+            "name": "format-line",
+            "pattern": "^.{81,120}$",
+            "severity": "Warning"
+        },
+        {
+            "message": "format: 120 columns exceeded",
+            "name": "format-line",
+            "pattern": "^.{121,}$",
+            "severity": "Error"
+        }
+    ]
+
+    ...
+}
+```
