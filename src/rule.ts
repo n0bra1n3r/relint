@@ -1,12 +1,6 @@
-import { info } from 'console';
 import * as vscode from 'vscode';
 
-export const enum ConfigSection
-{
-    Name = 'relint',
-    Language = 'language',
-    Rules = 'rules'
-}
+export const ConfigSectionName = 'relint';
 
 enum FixTypes
 {
@@ -41,7 +35,7 @@ class Default
 
 export default class Rule
 {
-    private static rules: Rule[] = [];
+    private static rules: { [language: string]: Rule[] } = {};
 
     private constructor(
             readonly id: string,
@@ -54,7 +48,7 @@ export default class Rule
             readonly severityCode: vscode.DiagnosticSeverity,
             readonly fix?: string) { }
 
-    public static get all(): Rule[] {
+    public static get all(): { [language: string]: Rule[] } {
         return this.rules;
     }
 
@@ -65,19 +59,18 @@ export default class Rule
 
     static monitorRules() {
         vscode.workspace.onDidChangeConfiguration(event => {
-            if (event.affectsConfiguration(ConfigSection.Name)) {
+            if (event.affectsConfiguration(ConfigSectionName)) {
                 this.rules = this.getRules();
             }
         });
     }
 
-    static getRules(): Rule[] {
-        const config = vscode.workspace.getConfiguration(ConfigSection.Name);
+    static getRules(): { [language: string]: Rule[] } {
+        const configuration = vscode.workspace.getConfiguration(ConfigSectionName);
+        const globalLanguage = configuration.get<string>('language') || Default.Language;
+        const ruleList = configuration.get<Config[]>('rules') ?? [];
 
-        const ruleConfigs = config.get<Config[]>(ConfigSection.Rules) ?? [];
-        const globalLanguage = config.get<string>(ConfigSection.Language) || Default.Language;
-
-        return ruleConfigs
+        return ruleList
             .filter(({
                 fix,
                 fixType,
@@ -105,25 +98,31 @@ export default class Rule
                 fixType: fixType || Default.FixType,
                 language: language || Default.Language
             }))
-            .map(({
+            .reduce((rules, {
                 fix,
                 fixType,
+                language,
                 maxLines,
                 pattern,
                 severity,
                 ...info }) => ({
-                ...info,
-                id: `/${pattern}/`,
-                fixType,
-                fix: fixType === 'replace'
-                            ? fix
-                            : fix || Default.Fix,
-                maxLines: fixType === 'replace'
-                            ? (maxLines ?? Default.MaxLines)
-                            : (maxLines ?? 0),
-                regex: new RegExp(pattern, 'gim'),
-                severityCode: vscode.DiagnosticSeverity[severity!] ??
-                          vscode.DiagnosticSeverity[Default.Severity]
-            }));
+                    ...rules, [language]: [
+                        ...(rules[language] ?? []), {
+                            ...info,
+                            id: `/${pattern}/`,
+                            fixType,
+                            fix: fixType === 'replace'
+                                        ? fix
+                                        : fix || Default.Fix,
+                            language,
+                            maxLines: fixType === 'replace'
+                                        ? (maxLines ?? Default.MaxLines)
+                                        : (maxLines ?? 0),
+                            regex: new RegExp(pattern, 'gim'),
+                            severityCode: vscode.DiagnosticSeverity[severity!] ??
+                                    vscode.DiagnosticSeverity[Default.Severity]
+                        }
+                    ]
+                }), <{ [language: string]: Rule[] }>{});
     }
 }

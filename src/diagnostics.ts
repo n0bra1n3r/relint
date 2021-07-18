@@ -34,7 +34,7 @@ export default function activateDiagnostics(context: vscode.ExtensionContext): v
 }
 
 function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.DiagnosticCollection): void {
-    const rules = Rule.all.filter(rule => rule.language === document.languageId);
+    const rules = Rule.all[document.languageId];
 
     const diagnosticList: Diagnostic[] = [];
 

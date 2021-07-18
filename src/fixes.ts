@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Diagnostic, DiagnosticCollectionName } from './diagnostics';
-import Rule, { ConfigSection, FixType } from './rule';
+import Rule, { ConfigSectionName, FixType } from './rule';
 import { sortedIndex } from './util';
 
 type Fix = {
@@ -11,8 +11,6 @@ type Fix = {
     string: string,
     type: FixType
 };
-
-type FixMap = { [id: string]: Fix };
 
 const MaxFixIters = 64;
 
@@ -28,43 +26,43 @@ export default function activateFixes(context: vscode.ExtensionContext) {
     registerFixes(context, fixes);
 
     vscode.workspace.onDidChangeConfiguration(event => {
-        if (event.affectsConfiguration(ConfigSection.Name)) {
+        if (event.affectsConfiguration(ConfigSectionName)) {
             const newFixes = getFixes();
 
-            Object.values(fixes)
-                .filter(fix => !newFixes[fix.ruleId])
-                .forEach(fix => {
+            for (const [i, fix] of fixes.entries()) {
+                const j = newFixes.findIndex(({ ruleId }) => ruleId === fix.ruleId);
+                if (j === -1) {
                     deregisterFix(context, fix);
-                    delete fixes[fix.ruleId];
-                });
+                    fixes.splice(i, 1);
+                } else {
+                    Object.assign(fix, newFixes[j]);
+                    newFixes.splice(j, 1);
+                }
+            }
 
-            Object.values(newFixes)
-                .forEach(newFix => {
-                    fixes[newFix.ruleId] = newFix;
-                });
+            fixes.push(...newFixes);
 
             registerFixes(context, newFixes);
         }
     });
 }
 
-function getFixes(): FixMap {
-    return Rule.all
+function getFixes(): Fix[] {
+    return Object.values(Rule.all)
+        .flat()
         .filter(rule => rule.fix !== undefined)
-        .reduce((accumulator, rule) => ({
-            ...accumulator, [rule.id]: {
-                group: rule.name,
-                language: rule.language,
-                regex: new RegExp(rule.regex),
-                ruleId: rule.id,
-                string: rule.fix!,
-                type: rule.fixType
-            }
-        }), <FixMap>{});
+        .map(rule => ({
+            group: rule.name,
+            language: rule.language,
+            regex: new RegExp(rule.regex),
+            ruleId: rule.id,
+            string: rule.fix!,
+            type: rule.fixType
+        }));
 }
 
-function registerFixes(context: vscode.ExtensionContext, fixes: FixMap) {
-    for (const fix of Object.values(fixes)) {
+function registerFixes(context: vscode.ExtensionContext, fixes: Fix[]) {
+    for (const fix of fixes) {
         if (disposableCache[fix.language]) {
             disposableCache[fix.language].count += 1;
         } else {
@@ -106,7 +104,7 @@ function deregisterFix(context: vscode.ExtensionContext, fix: Fix) {
 
 class QuickFixProvider implements vscode.CodeActionProvider
 {
-    public constructor(readonly fixes: FixMap) { }
+    public constructor(readonly fixes: Fix[]) { }
 
     provideCodeActions(
             document: vscode.TextDocument,
@@ -125,7 +123,7 @@ class QuickFixProvider implements vscode.CodeActionProvider
 
 class FixAllProvider implements vscode.CodeActionProvider
 {
-    public constructor(readonly fixes: FixMap) { }
+    public constructor(readonly fixes: Fix[]) { }
 
     provideCodeActions(
             document: vscode.TextDocument,
@@ -152,7 +150,7 @@ class FixAllProvider implements vscode.CodeActionProvider
 function applyFixes(
         document: vscode.TextDocument,
         diagnostics: Diagnostic[],
-        fixes: FixMap): vscode.TextEdit[] {
+        fixes: Fix[]): vscode.TextEdit[] {
     const edits: vscode.TextEdit[] = [];
 
     for (const diagnostic of diagnostics) {
@@ -164,8 +162,7 @@ function applyFixes(
             return range;
         }, fullRange);
         const rangeText = document.getText(editRange);
-        const fixGroup = Object.values(fixes)
-            .filter(fix => fix.group === diagnostic.code);
+        const fixGroup = fixes.filter(fix => fix.group === diagnostic.code);
 
         let fixedText: string | undefined;
         for (let fixIter = 0; fixIter < MaxFixIters; fixIter += 1) {
