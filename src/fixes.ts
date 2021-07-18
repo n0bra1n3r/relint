@@ -166,22 +166,33 @@ function applyFixes(
 
         let fixedText: string | undefined;
         for (let fixIter = 0; fixIter < MaxFixIters; fixIter += 1) {
+            let groupFixedText: string | undefined;
             for (const fix of fixGroup) {
+                const textToBeFixed = groupFixedText ?? fixedText ?? rangeText;
+
+                let singleFixedText: string | undefined;
                 switch (fix.type) {
                     case 'replace':
-                        fixedText = applyReplaceFix(fixedText ?? rangeText, fix)
-                            ?? fixedText;
+                        singleFixedText = applyReplaceFix(textToBeFixed, fix);
                         break;
                     case 'reorder_asc':
                     case 'reorder_desc':
-                        fixedText = applyReorderFix(fixedText ?? rangeText, fix)
-                            ?? fixedText;
+                        singleFixedText = applyReorderFix(textToBeFixed, fix);
                         break;
                 }
+
+                if (singleFixedText !== undefined) {
+                    groupFixedText = singleFixedText;
+                }
             }
-            if (fixedText === undefined) { break; }
+
+            if (groupFixedText === undefined) { break; }
+            fixedText = groupFixedText;
         }
-        if (fixedText !== undefined) { edits.push(new vscode.TextEdit(editRange, fixedText)); }
+
+        if (fixedText !== undefined) {
+            edits.push(new vscode.TextEdit(editRange, fixedText));
+        }
     }
 
     return edits;
