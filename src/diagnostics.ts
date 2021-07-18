@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import Rule, { ConfigSection } from './rule';
+import Rule from './rule';
 import { sortedIndex } from './util';
 
 export const DiagnosticCollectionName = 'relint';
@@ -39,19 +39,20 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
     const diagnosticList: Diagnostic[] = [];
 
     if (rules.length > 0) {
-        const docRange = new vscode.Range(
-            document.lineAt(0).range.start,
-            document.lineAt(document.lineCount - 1).range.end);
+        const numLines = document.lineCount;
 
         for (const rule of rules) {
+            const maxLines = rule.maxLines || numLines;
+
             let line = 0;
-            while (true) {
-                let textRange: vscode.Range;
-                if (rule.isMultiline) {
-                    textRange = docRange;
-                } else {
-                    textRange = document.lineAt(line).range;
-                }
+            while (line < numLines) {
+                const endLine = Math.min(line + maxLines, numLines)
+                let textRange = document
+                    .lineAt(line)
+                    .range
+                    .union(document
+                        .lineAt(endLine - 1)
+                        .range);
 
                 const text = document.getText(textRange);
                 let array: RegExpExecArray | null;
@@ -100,8 +101,8 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
                     }
                 }
 
+                if (textRange.end.line >= numLines - 1) { break; }
                 line += 1;
-                if (rule.isMultiline || line >= document.lineCount) { break; }
             }
         }
     }
