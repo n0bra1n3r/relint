@@ -49,3 +49,6 @@ All notable changes to the "relint" extension will be documented in this file.
 
 ## 0.5.1
 - Fix crash on unsupported language
+
+## 0.6.0
+- Don't diagnose files outside of project and allow multiple languages per rule
