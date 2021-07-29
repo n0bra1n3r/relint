@@ -23,7 +23,6 @@ export default function activateDiagnostics(context: vscode.ExtensionContext): v
 
     context.subscriptions.push(
         vscode.window.onDidChangeActiveTextEditor(editor => {
-            console.log(editor?.document.fileName);
             if (editor) { refreshDiagnostics(editor.document, diagnostics); }
         })
     );
@@ -35,6 +34,8 @@ export default function activateDiagnostics(context: vscode.ExtensionContext): v
 }
 
 function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.DiagnosticCollection): void {
+    if (!vscode.workspace.getWorkspaceFolder(document.uri)) return;
+
     const rules = Rule.all[document.languageId];
 
     const diagnosticList: Diagnostic[] = [];
