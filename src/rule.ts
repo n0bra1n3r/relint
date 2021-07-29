@@ -16,7 +16,7 @@ export type Severity = keyof typeof vscode.DiagnosticSeverity;
 type Config = {
     fix?: string,
     fixType?: FixType,
-    language?: string,
+    language?: string | string[],
     maxLines?: number,
     message: string,
     name: string,
@@ -67,7 +67,7 @@ export default class Rule
 
     static getRules(): Partial<Record<string, Rule[]>> {
         const configuration = vscode.workspace.getConfiguration(ConfigSectionName);
-        const globalLanguage = configuration.get<string>('language') || Default.Language;
+        const globalLanguage = configuration.get<string | string[]>('language') || Default.Language;
         const ruleList = configuration.get<Config[]>('rules') ?? [];
 
         return ruleList
@@ -98,6 +98,13 @@ export default class Rule
                 fixType: fixType || Default.FixType,
                 language: language || Default.Language
             }))
+            .flatMap(({ language, ...info }) =>
+                !Array.isArray(language)
+                    ? [{ ...info, language }]
+                    : language.map(language => ({
+                        ...info,
+                        language: language || Default.Language
+                    })))
             .reduce((rules, {
                 fix,
                 fixType,

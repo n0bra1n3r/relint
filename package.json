@@ -40,10 +40,10 @@
                     ],
                     "properties": {
                         "language": {
-                            "type": "string",
+                            "type": ["string", "array"],
                             "default": "plaintext",
                             "minLength": 1,
-                            "description": "The default programming language the rules apply to."
+                            "description": "The default programming language(s) the rules apply to."
                         },
                         "rules": {
                             "type": "array",
@@ -57,10 +57,10 @@
                                 ],
                                 "properties": {
                                     "language": {
-                                        "type": "string",
+                                        "type": ["string", "array"],
                                         "default": "plaintext",
                                         "minLength": 1,
-                                        "description": "The programming language the rule applies to."
+                                        "description": "The programming language(s) the rule applies to."
                                     },
                                     "name": {
                                         "type": "string",
