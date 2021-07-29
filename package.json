@@ -3,7 +3,7 @@
     "displayName": "relint",
     "publisher": "n0brain3r",
     "description": "Regex-based linting for any language",
-    "version": "0.5.1",
+    "version": "0.6.0",
     "repository": {
         "type": "git",
         "url": "https://github.com/n0bra1n3r/relint.git"
@@ -40,7 +40,10 @@
                     ],
                     "properties": {
                         "language": {
-                            "type": ["string", "array"],
+                            "type": [
+                                "string",
+                                "array"
+                            ],
                             "default": "plaintext",
                             "minLength": 1,
                             "description": "The default programming language(s) the rules apply to."
@@ -57,7 +60,10 @@
                                 ],
                                 "properties": {
                                     "language": {
-                                        "type": ["string", "array"],
+                                        "type": [
+                                            "string",
+                                            "array"
+                                        ],
                                         "default": "plaintext",
                                         "minLength": 1,
                                         "description": "The programming language(s) the rule applies to."
