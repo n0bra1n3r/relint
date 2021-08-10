@@ -130,8 +130,6 @@ This configuration performs the following fixes:
 
 The `name` configuration plays an important part here in that all rules with the same name are considered part of a *rule group*. Rules in such groups that produce diagnostics in overlapping ranges of text behave as one rule that can match multiple rule violations and apply the corresponding fixes to text in their combined ranges.
 
-## More examples
-
 The following is a simple configuration that issues diagnostics for maximum characters exceeded in a line:
 
 ```json
