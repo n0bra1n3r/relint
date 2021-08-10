@@ -3,6 +3,7 @@
     "displayName": "relint",
     "publisher": "n0brain3r",
     "description": "Regex-based linting for any language",
+    "icon": "assets/icon.png",
     "version": "0.6.0",
     "repository": {
         "type": "git",
