@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import Rule from './rule';
 import { sortedIndex } from './util';
 import * as util from './util';
-import { dryerLintLog } from './extension'
+import { relintLog } from './extension'
 
-export const DiagnosticCollectionName = 'Dryer Lint';
+export const DiagnosticCollectionName = 'relint';
 
 export class Diagnostic extends vscode.Diagnostic
 {
@@ -19,7 +19,7 @@ export default function activateDiagnostics(context: vscode.ExtensionContext): v
     const diagnostics = vscode.languages.createDiagnosticCollection(DiagnosticCollectionName);
     context.subscriptions.push(diagnostics);
 
-    // If there is an active text editor, then immediately refresh the diagnostics to include the dryerLint diagnositics.
+    // If there is an active text editor, then immediately refresh the diagnostics to include the relint diagnositics.
     // TODO: This should occur after subscribing onDidChangeActiveTextEditor, in case an editor becomes active between these actions.
     if (vscode.window.activeTextEditor) {
         refreshDiagnostics(vscode.window.activeTextEditor.document, diagnostics);
@@ -45,22 +45,18 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
     if (!vscode.workspace.getWorkspaceFolder(document.uri)) return;
 
     const rules = Rule.all[document.languageId];
-    if (rules) {
-        dryerLintLog(`Refreshing Dryer Lint diagnostics for ${rules.length} rules applied to ${document.lineCount} lines in\n${document.fileName}.`)
-    } else {
-        dryerLintLog(`No Dryer Lint rules found for ${document.fileName}, which has language=${document.languageId}.`)
-    }
+    relintLog(`Refreshing relint diagnostics for ${rules?.length} rules applied to ${document.lineCount} lines in\n${document.fileName}.`)
 
-    // Track whether dryerLint is enabled or disabled via comments.
-    var dryerLintEnabled = true;
+    // Track whether Relint is enabled or disabled via comments.
+    var relintEnabled = true;
 
     var commentChar = util.getLineCommentChar(document);
     if (!commentChar) {
         commentChar = "(?://|#)"
     }
     const escapedCommentChar = commentChar.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const dryerLintCommentConfigRegex = new RegExp('^[ \\t]*'+ escapedCommentChar + '[ \t]*dryer-lint:[ \\t]*(?<config>.*?)[ \\t]*$', 'mi');
-    dryerLintLog("RegEx for finding Dryer Lint config comments: " + dryerLintCommentConfigRegex.source)
+    const relintCommentConfigRegex = new RegExp('^[ \\t]*'+ escapedCommentChar + '[ \t]*relint:[ \\t]*(?<config>.*?)[ \\t]*$', 'mi');
+    relintLog("Regex for finding relint config comments: " + relintCommentConfigRegex.source)
 
     const diagnosticList: Diagnostic[] = [];
 
@@ -69,7 +65,7 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
 
         for (const rule of rules) { // Iterate over all of the rules
             const maxLines = rule.maxLines || numLines;
-            dryerLintLog(`Checking rule "${rule.name}."`)
+            relintLog(`Checking rule "${rule.name}."`)
 
             for(var line=0; line < numLines; line++) {
                 const endLine = Math.min(line + maxLines, numLines)
@@ -82,22 +78,22 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
 
                 const text = document.getText(textRange);
 
-                // Check if the text is enabling or disabling dryerLint.
-                // TODO: Move the code for enabling or disabling dryerLint via comments into a dedicated function. 
+                // Check if the text is enabling or disabling Relint.
+                // TODO: Move the code for enabling or disabling Relint via comments into a dedicated function. 
                 // TODO: It would also be a good idea to sweep through the file once and find all of the config comments, and store the results, instead of checking repeatedly.
-                var commentConfigMatch = text.match(dryerLintCommentConfigRegex);
+                var commentConfigMatch = text.match(relintCommentConfigRegex);
                 if (commentConfigMatch?.groups) {
-                    // If the config text is "disable", "disabled", or "enabled=false" (with optional spaces around the equal sign), then disable dryerLint.
+                    // If the config text is "disable", "disabled", or "enabled=false" (with optional spaces around the equal sign), then disable relint.
                     if (commentConfigMatch.groups.config.match(/(?:disabled?|enabled[ \t]*=[ \t]*false)/)){
-                        dryerLintEnabled = false;
-                        dryerLintLog(`Disabled Dryer Lint checking starting at line=${line} because of comment config "${commentConfigMatch.groups.config}".`)
+                        relintEnabled = false;
+                        relintLog(`Disabled Relint checking starting at line=${line} because of comment config "${commentConfigMatch.groups.config}".`)
                     } else if (commentConfigMatch.groups.config.match(/enabled?(?:[ \t]*:=[ \t]*true)?/)) {
-                        // If the config text is "enable", "enabled", or "enabled=true" (with optional spaces around the equal sign), then reenable dryerLint.
-                        dryerLintEnabled = true;
-                        dryerLintLog(`Enabled Dryer Lint checking starting at line=${line} because of comment config "${commentConfigMatch.groups.config}".`)
+                        // If the config text is "enable", "enabled", or "enabled=true" (with optional spaces around the equal sign), then reenable relint.
+                        relintEnabled = true;
+                        relintLog(`Enabled Relint checking starting at line=${line} because of comment config "${commentConfigMatch.groups.config}".`)
                     }
                 }
-                if (!dryerLintEnabled) {
+                if (!relintEnabled) {
                     continue; // Go to the next line.
                 }
 
@@ -119,7 +115,7 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
                         if (!diagnosticList.includes(entry)) {
                             diagnosticList.push(entry);
                         }
-                        dryerLintLog(`The rule "${rule.name}" with message "${message}" matched "${array}".`);
+                        relintLog(`The rule "${rule.name}" with message "${message}" matched "${array}".`);
                     }
                 } else { // Otherwise, fix type is 'reorder_asc' or 'reorder_desc'
                     const sorter: string[] = [];
@@ -159,7 +155,7 @@ function refreshDiagnostics(document: vscode.TextDocument, diagnostics: vscode.D
                 if (textRange.end.line >= numLines - 1) { break; }
             }
         }
-        dryerLintLog(`Finished refreshing Dryer Lint diagnostics for ${rules?.length} rules applied to ${document.lineCount} lines in\n${document.fileName}.`)
+        relintLog(`Finished refreshing relint diagnostics for ${rules?.length} rules applied to ${document.lineCount} lines in\n${document.fileName}.`)
     }
 
     diagnostics.set(document.uri, diagnosticList);

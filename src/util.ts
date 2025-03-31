@@ -21,6 +21,7 @@ const commentChars: Record<string, string | undefined> = {
     java: "//",
     javascript: "//",
     latex: '%',
+    // tex: '%',
     python: "#",
     ruby: "#",
     shellscript: "#",

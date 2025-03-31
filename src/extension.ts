@@ -6,7 +6,7 @@ import Rule from './rule';
 let outputChannel: vscode.OutputChannel;
 export function activate(context: vscode.ExtensionContext) {
     // Create a dedicated output channel
-    outputChannel = vscode.window.createOutputChannel("Dryer Lint");
+    outputChannel = vscode.window.createOutputChannel("Relint");
 
     // Create the list of rules.
     Rule.loadAll();
@@ -16,11 +16,11 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-    outputChannel.appendLine("Dryer Lint is shutting down.");
+    outputChannel.appendLine("Relint is shutting down.");
     outputChannel.dispose();
 }
 
 // Function to log messages to the custom output channel
-export function dryerLintLog(message: string) {
+export function relintLog(message: string) {
     outputChannel.appendLine(`[${new Date().toLocaleTimeString()}] ${message}`);
 }
