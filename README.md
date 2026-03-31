@@ -50,7 +50,7 @@ The configuration options can be found in the `contributes.configuration` sectio
 
 # Usage Guide
 
-To create a `relint` linting rules, modify `.vscode/settings.json` within your workspace.  
+To create `relint` linting rules, modify `.vscode/settings.json` within your workspace.  
 ```jsonc
 "relint": {
     // Set the name of the languages where your rules apply
